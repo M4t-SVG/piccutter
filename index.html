@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PicCutter - Découpe d'image pour Instagram</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 PicCutter</h1>
+            <p>Découpez vos images pour créer une grille Instagram parfaite</p>
+        </header>
+
+        <main>
+            <!-- Section upload -->
+            <section class="upload-section">
+                <h2>1. Choisissez votre image</h2>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="imageInput" accept="image/jpeg,image/png" hidden>
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <p>Cliquez pour sélectionner une image</p>
+                        <p class="upload-hint">Formats acceptés : JPG, PNG</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section configuration -->
+            <section class="config-section" id="configSection" style="display: none;">
+                <h2>2. Choisissez votre grille</h2>
+                <div class="grid-selector">
+                    <div class="grid-option" data-grid="3">
+                        <div class="grid-preview">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <span>1×3 (3 images)</span>
+                    </div>
+                    <div class="grid-option" data-grid="6">
+                        <div class="grid-preview">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <span>2×3 (6 images)</span>
+                    </div>
+                    <div class="grid-option" data-grid="9">
+                        <div class="grid-preview">
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                            <div class="grid-cell"></div>
+                        </div>
+                        <span>3×3 (9 images)</span>
+                    </div>
+                </div>
+
+                <!-- Section choix de format -->
+                <h2>3. Choisissez le format de sortie</h2>
+                <div class="format-selector">
+                    <div class="format-option" data-format="current">
+                        <div class="format-preview">
+                            <div class="format-icon">📐</div>
+                        </div>
+                        <div class="format-info">
+                            <h3>Format actuel</h3>
+                            <p>Conserve les proportions originales de votre image</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="instagram">
+                        <div class="format-preview">
+                            <div class="format-icon">📱</div>
+                        </div>
+                        <div class="format-info">
+                            <h3>Format Instagram parfait</h3>
+                            <p>Ratio 4:5 optimisé pour Instagram (portrait)</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="square">
+                        <div class="format-preview">
+                            <div class="format-icon">⬜</div>
+                        </div>
+                        <div class="format-info">
+                            <h3>Format carré</h3>
+                            <p>Image parfaitement carrée (1:1)</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section aperçu -->
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <h2>4. Aperçu de votre image</h2>
+                <div class="image-preview">
+                    <canvas id="previewCanvas" width="400" height="400"></canvas>
+                </div>
+                <button id="cutButton" class="btn btn-primary">Découper l'image</button>
+            </section>
+
+            <!-- Section résultats -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>5. Vos images découpées</h2>
+                <div class="download-all">
+                    <button id="downloadAllBtn" class="btn btn-secondary">Télécharger tout (ZIP)</button>
+                </div>
+                <div class="grid-results" id="gridResults"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>✨ Créez des grilles Instagram parfaites en quelques clics !</p>
+            <div class="copyright">
+                <p>© 2025 MATEO SAUVAGET - Licence MIT libre d'utilisation</p>
+                <p><a href="LICENSE" target="_blank">Voir la licence complète</a></p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
