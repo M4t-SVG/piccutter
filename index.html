@@ -78,13 +78,22 @@
                             <p>Conserve les proportions originales de votre image</p>
                         </div>
                     </div>
-                    <div class="format-option" data-format="instagram">
+                    <div class="format-option" data-format="instagram-portrait">
                         <div class="format-preview">
-                            <div class="format-icon">📱</div>
+                            <div class="format-icon">🖼️</div>
                         </div>
                         <div class="format-info">
-                            <h3>Format Instagram parfait</h3>
-                            <p>Ratio 4:5 optimisé pour Instagram (portrait)</p>
+                            <h3>Portrait Instagram (4:5)</h3>
+                            <p>Ratio 4:5 optimisé pour Instagram portrait (ex: 1080x1350)</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="instagram-landscape">
+                        <div class="format-preview">
+                            <div class="format-icon">🌄</div>
+                        </div>
+                        <div class="format-info">
+                            <h3>Paysage Instagram (1,91:1)</h3>
+                            <p>Ratio 1,91:1 optimisé pour Instagram paysage (ex: 1080x566)</p>
                         </div>
                     </div>
                     <div class="format-option" data-format="square">
@@ -103,7 +112,10 @@
             <section class="preview-section" id="previewSection" style="display: none;">
                 <h2>4. Aperçu de votre image</h2>
                 <div class="image-preview">
-                    <canvas id="previewCanvas" width="400" height="400"></canvas>
+                    <!-- Le canvas plein est supprimé, seul l'aperçu grille simulée sera affiché par JS -->
+                </div>
+                <div class="safezone-advice">
+                    <p>🟠 <strong>Astuce :</strong> Pour un rendu parfait, évitez de placer du texte ou des éléments importants trop près des bords de l'image. Un léger chevauchement est appliqué pour compenser l'affichage Instagram.</p>
                 </div>
                 <button id="cutButton" class="btn btn-primary">Découper l'image</button>
             </section>

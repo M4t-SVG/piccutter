@@ -3,6 +3,8 @@ let selectedImage = null;
 let selectedGrid = null;
 let selectedFormat = 'square'; // Format par défaut
 let originalImageData = null;
+const OVERLAP = 10; // chevauchement en pixels entre tuiles (ajustable)
+const SIMULATED_GUTTER = 4; // espace simulé entre les tuiles dans l'aperçu grille
 
 // Éléments DOM
 const uploadArea = document.getElementById('uploadArea');
@@ -155,23 +157,16 @@ function selectFormat(option) {
 
 function showPreview() {
     if (!selectedImage || !selectedGrid || !selectedFormat) return;
-    
-    const ctx = previewCanvas.getContext('2d');
-    
-    // Adapter le canvas selon le format
+    // Crée un canvas en mémoire pour la découpe et l'aperçu grille
     let canvasWidth, canvasHeight;
     let sourceWidth, sourceHeight, sourceX, sourceY;
-    
     switch(selectedFormat) {
-        case 'current':
-            // Format actuel - garder les proportions originales
+        case 'current': {
             const aspectRatio = selectedImage.width / selectedImage.height;
             if (aspectRatio > 1) {
-                // Image plus large que haute
                 canvasWidth = 400;
                 canvasHeight = 400 / aspectRatio;
             } else {
-                // Image plus haute que large
                 canvasHeight = 400;
                 canvasWidth = 400 * aspectRatio;
             }
@@ -180,32 +175,45 @@ function showPreview() {
             sourceX = 0;
             sourceY = 0;
             break;
-            
-        case 'instagram':
-            // Format Instagram 4:5
-            canvasWidth = 400;
-            canvasHeight = 500; // Ratio 4:5
-            const instagramRatio = 4/5;
-            const imageRatio = selectedImage.width / selectedImage.height;
-            
-            if (imageRatio > instagramRatio) {
-                // Image plus large, crop horizontalement
-                sourceWidth = selectedImage.height * instagramRatio;
+        }
+        case 'instagram-portrait': {
+            canvasWidth = 1080;
+            canvasHeight = 1350;
+            const targetRatio = 4/5;
+            const imgRatio = selectedImage.width / selectedImage.height;
+            if (imgRatio > targetRatio) {
                 sourceHeight = selectedImage.height;
+                sourceWidth = selectedImage.height * targetRatio;
                 sourceX = (selectedImage.width - sourceWidth) / 2;
                 sourceY = 0;
             } else {
-                // Image plus haute, crop verticalement
                 sourceWidth = selectedImage.width;
-                sourceHeight = selectedImage.width / instagramRatio;
+                sourceHeight = selectedImage.width / targetRatio;
                 sourceX = 0;
                 sourceY = (selectedImage.height - sourceHeight) / 2;
             }
             break;
-            
+        }
+        case 'instagram-landscape': {
+            canvasWidth = 1080;
+            canvasHeight = 566;
+            const targetRatio = 1.91;
+            const imgRatio = selectedImage.width / selectedImage.height;
+            if (imgRatio > targetRatio) {
+                sourceHeight = selectedImage.height;
+                sourceWidth = selectedImage.height * targetRatio;
+                sourceX = (selectedImage.width - sourceWidth) / 2;
+                sourceY = 0;
+            } else {
+                sourceWidth = selectedImage.width;
+                sourceHeight = selectedImage.width / targetRatio;
+                sourceX = 0;
+                sourceY = (selectedImage.height - sourceHeight) / 2;
+            }
+            break;
+        }
         case 'square':
-        default:
-            // Format carré
+        default: {
             canvasWidth = 400;
             canvasHeight = 400;
             const size = Math.min(selectedImage.width, selectedImage.height);
@@ -214,130 +222,153 @@ function showPreview() {
             sourceX = (selectedImage.width - size) / 2;
             sourceY = (selectedImage.height - size) / 2;
             break;
+        }
     }
-    
-    // Redimensionner le canvas
+    // Canvas en mémoire pour la découpe et l'aperçu grille
+    const previewCanvas = document.createElement('canvas');
     previewCanvas.width = canvasWidth;
     previewCanvas.height = canvasHeight;
-    
-    // Dessiner l'image
+    const ctx = previewCanvas.getContext('2d');
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     ctx.drawImage(
         selectedImage,
         sourceX, sourceY, sourceWidth, sourceHeight,
         0, 0, canvasWidth, canvasHeight
     );
-    
-    // Afficher la section d'aperçu
+    // Affichage d'une safe zone (bordure intérieure) sur le canvas grille
+    if (selectedFormat === 'instagram-portrait' || selectedFormat === 'instagram-landscape' || selectedFormat === 'square') {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+        ctx.lineWidth = 2;
+        // 10% de marge de sécurité
+        const marginX = canvasWidth * 0.10;
+        const marginY = canvasHeight * 0.10;
+        ctx.strokeRect(marginX, marginY, canvasWidth - 2 * marginX, canvasHeight - 2 * marginY);
+        ctx.restore();
+    }
     previewSection.style.display = 'block';
     previewSection.scrollIntoView({ behavior: 'smooth' });
+    // Aperçu grille Instagram simulée (unique aperçu visible)
+    showSimulatedGridPreview(canvasWidth, canvasHeight, previewCanvas);
+}
+
+function showSimulatedGridPreview(canvasWidth, canvasHeight, previewCanvas) {
+    // Crée ou récupère le canvas d'aperçu grille
+    let gridCanvas = document.getElementById('simulatedGridCanvas');
+    if (!gridCanvas) {
+        gridCanvas = document.createElement('canvas');
+        gridCanvas.id = 'simulatedGridCanvas';
+        gridCanvas.style.display = 'block';
+        gridCanvas.style.margin = '24px auto 0 auto';
+        gridCanvas.style.maxWidth = '100%';
+        gridCanvas.style.background = '#fff';
+        const previewDiv = document.querySelector('.image-preview');
+        previewDiv.appendChild(gridCanvas);
+    }
+    // Taille d'affichage
+    const gridCols = (selectedGrid === 3) ? 3 : 3;
+    const gridRows = (selectedGrid === 6) ? 2 : (selectedGrid === 9 ? 3 : 1);
+    const gutter = SIMULATED_GUTTER;
+    const tileW = Math.floor((canvasWidth - (gridCols - 1) * gutter) / gridCols);
+    const tileH = Math.floor((canvasHeight - (gridRows - 1) * gutter) / gridRows);
+    gridCanvas.width = tileW * gridCols + gutter * (gridCols - 1);
+    gridCanvas.height = tileH * gridRows + gutter * (gridRows - 1);
+    const gctx = gridCanvas.getContext('2d');
+    gctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+    // Redessine chaque tuile avec le chevauchement
+    for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+            let sx = col * (canvasWidth / gridCols) - (col > 0 ? OVERLAP / 2 : 0);
+            let sy = row * (canvasHeight / gridRows) - (row > 0 ? OVERLAP / 2 : 0);
+            let sw = (canvasWidth / gridCols) + (col > 0 ? OVERLAP / 2 : 0) + (col < gridCols - 1 ? OVERLAP / 2 : 0);
+            let sh = (canvasHeight / gridRows) + (row > 0 ? OVERLAP / 2 : 0) + (row < gridRows - 1 ? OVERLAP / 2 : 0);
+            if (sx < 0) sx = 0;
+            if (sy < 0) sy = 0;
+            if (sx + sw > canvasWidth) sw = canvasWidth - sx;
+            if (sy + sh > canvasHeight) sh = canvasHeight - sy;
+            gctx.save();
+            gctx.beginPath();
+            gctx.rect(col * (tileW + gutter), row * (tileH + gutter), tileW, tileH);
+            gctx.clip();
+            gctx.drawImage(
+                previewCanvas,
+                sx, sy, sw, sh,
+                col * (tileW + gutter), row * (tileH + gutter), tileW, tileH
+            );
+            gctx.restore();
+        }
+    }
+    // Ajoute le texte explicatif
+    gctx.save();
+    gctx.font = 'bold 16px sans-serif';
+    gctx.fillStyle = 'rgba(0,0,0,0.5)';
+    gctx.fillText('Aperçu grille Instagram simulée (gutter visible)', 10, 24);
+    gctx.restore();
 }
 
 // Découpe de l'image
 function cutImage() {
     if (!selectedImage || !selectedGrid || !selectedFormat) return;
-    
     const pieces = [];
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Déterminer la configuration de la grille
     let rows, cols;
     switch(selectedGrid) {
-        case 3:
-            rows = 1; cols = 3;
-            break;
-        case 6:
-            rows = 2; cols = 3;
-            break;
-        case 9:
-            rows = 3; cols = 3;
-            break;
-        default:
-            return;
+        case 3: rows = 1; cols = 3; break;
+        case 6: rows = 2; cols = 3; break;
+        case 9: rows = 3; cols = 3; break;
+        default: return;
     }
-    
-    // Calculer les dimensions de l'image finale selon le format
-    let finalWidth, finalHeight;
+    // Taille Grids : 1152x1440 (portrait) ou 1152x1152 (carré)
+    let tileW = 1152, tileH = 1440;
+    if (selectedFormat === 'square') tileH = tileW;
+    if (selectedFormat === 'instagram-landscape') tileH = Math.round(tileW / 1.91);
+    const finalWidth = tileW * cols;
+    const finalHeight = tileH * rows;
+    // Redimensionner/cropper l'image d'origine au bon ratio et à la bonne taille
     let sourceWidth, sourceHeight, sourceX, sourceY;
-    
-    switch(selectedFormat) {
-        case 'current':
-            // Garder les proportions originales
-            const aspectRatio = selectedImage.width / selectedImage.height;
-            if (aspectRatio > 1) {
-                finalWidth = selectedImage.width;
-                finalHeight = selectedImage.height;
-            } else {
-                finalWidth = selectedImage.width;
-                finalHeight = selectedImage.height;
-            }
-            sourceWidth = selectedImage.width;
-            sourceHeight = selectedImage.height;
-            sourceX = 0;
-            sourceY = 0;
-            break;
-            
-        case 'instagram':
-            // Format Instagram 4:5
-            const instagramRatio = 4/5;
-            const imageRatio = selectedImage.width / selectedImage.height;
-            
-            if (imageRatio > instagramRatio) {
-                // Image plus large, crop horizontalement
-                finalWidth = selectedImage.height * instagramRatio;
-                finalHeight = selectedImage.height;
-                sourceWidth = finalWidth;
-                sourceHeight = finalHeight;
-                sourceX = (selectedImage.width - sourceWidth) / 2;
-                sourceY = 0;
-            } else {
-                // Image plus haute, crop verticalement
-                finalWidth = selectedImage.width;
-                finalHeight = selectedImage.width / instagramRatio;
-                sourceWidth = finalWidth;
-                sourceHeight = finalHeight;
-                sourceX = 0;
-                sourceY = (selectedImage.height - sourceHeight) / 2;
-            }
-            break;
-            
-        case 'square':
-        default:
-            // Format carré
-            const size = Math.min(selectedImage.width, selectedImage.height);
-            finalWidth = size;
-            finalHeight = size;
-            sourceWidth = size;
-            sourceHeight = size;
-            sourceX = (selectedImage.width - size) / 2;
-            sourceY = (selectedImage.height - size) / 2;
-            break;
+    let targetRatio = finalWidth / finalHeight;
+    const imgRatio = selectedImage.width / selectedImage.height;
+    if (imgRatio > targetRatio) {
+        // Image trop large, crop horizontal
+        sourceHeight = selectedImage.height;
+        sourceWidth = selectedImage.height * targetRatio;
+        sourceX = (selectedImage.width - sourceWidth) / 2;
+        sourceY = 0;
+    } else {
+        // Image trop haute, crop vertical
+        sourceWidth = selectedImage.width;
+        sourceHeight = selectedImage.width / targetRatio;
+        sourceX = 0;
+        sourceY = (selectedImage.height - sourceHeight) / 2;
     }
-    
-    // Taille de chaque morceau
-    const pieceWidth = finalWidth / cols;
-    const pieceHeight = finalHeight / rows;
-    
-    // Créer chaque morceau
+    // Alerte si l'image d'origine est trop petite
+    if (selectedImage.width < finalWidth || selectedImage.height < finalHeight) {
+        alert("⚠️ L'image d'origine est plus petite que la taille finale recommandée (" + finalWidth + "x" + finalHeight + "). La qualité peut être dégradée.");
+    }
+    // Canvas temporaire à la taille finale
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = finalWidth;
+    tempCanvas.height = finalHeight;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(
+        selectedImage,
+        sourceX, sourceY, sourceWidth, sourceHeight,
+        0, 0, finalWidth, finalHeight
+    );
+    // Découper chaque tuile sans chevauchement
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             const pieceCanvas = document.createElement('canvas');
+            pieceCanvas.width = tileW;
+            pieceCanvas.height = tileH;
             const pieceCtx = pieceCanvas.getContext('2d');
-            
-            pieceCanvas.width = pieceWidth;
-            pieceCanvas.height = pieceHeight;
-            
-            // Dessiner le morceau
             pieceCtx.drawImage(
-                selectedImage,
-                sourceX + col * pieceWidth,
-                sourceY + row * pieceHeight,
-                pieceWidth,
-                pieceHeight,
-                0, 0, pieceWidth, pieceHeight
+                tempCanvas,
+                col * tileW,
+                row * tileH,
+                tileW,
+                tileH,
+                0, 0, tileW, tileH
             );
-            
             pieces.push({
                 canvas: pieceCanvas,
                 row: row + 1,
@@ -346,8 +377,6 @@ function cutImage() {
             });
         }
     }
-    
-    // Afficher les résultats
     displayResults(pieces);
 }
 
